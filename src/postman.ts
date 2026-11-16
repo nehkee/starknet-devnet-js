@@ -27,6 +27,13 @@ export interface FlushResponse {
     l1_provider: string;
 }
 
+export interface LoadL1MessagingContractOptions {
+    /** Address of an already deployed L1 messaging contract to load. */
+    messagingContractAddress?: string;
+    /** Private key of the L1 account used for deploying a new messaging contract. */
+    deployerAccountPrivateKey?: string;
+}
+
 export interface LoadL1MessagingContractResponse {
     messaging_contract_address: string;
 }
@@ -70,21 +77,23 @@ export class Postman {
     }
 
     /**
-     * If `address` specified, tries to load an L1 messaging contract from that address.
-     * If `address` omitted, deploys a new messaging contract by relying on the first predeployed
-     * account of the L1 network specified with `networkUrl`, assuming default mnemonic seed.
+     * If `options.messagingContractAddress` is specified, tries to load an L1 messaging contract
+     * from that address.
+     * Otherwise deploys a new messaging contract by relying on the first predeployed account of
+     * the L1 network specified with `networkUrl`, assuming default mnemonic seed.
      * If this predeployed account assumption does not hold, you should specify the private key
-     * of the account to be used in `deployerAccountPrivateKey`.
+     * of the account to be used in `options.deployerAccountPrivateKey`.
+     * The two options are mutually exclusive.
      * More info in: https://starknet-io.github.io/starknet-devnet/docs/postman#load
      */
     public async loadL1MessagingContract(
         networkUrl: string,
-        messagingContractAddress?: string,
-        deployerAccountPrivateKey?: string,
+        options: LoadL1MessagingContractOptions = {},
     ): Promise<LoadL1MessagingContractResponse> {
+        const { messagingContractAddress, deployerAccountPrivateKey } = options;
         if (!!messagingContractAddress && !!deployerAccountPrivateKey) {
             throw new Error(
-                "Both parameters cannot be specified simulatenously: `address`, `deployer_account_private_key`",
+                "Both options cannot be specified simultaneously: `messagingContractAddress`, `deployerAccountPrivateKey`",
             );
         }
         return await this.rpcProvider.sendRequest("devnet_postmanLoad", {

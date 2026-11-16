@@ -1,7 +1,7 @@
 import * as starknet from "starknet";
 import { DevnetProvider } from "..";
 import { Contract, ContractFactory, JsonRpcProvider } from "ethers";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { expectHexEquality, getContractArtifact, getPredeployedAccount } from "./util";
 
 const HEX_REGEX = /^0x[0-9A-Fa-f]+/;
@@ -36,10 +36,8 @@ describe("Postman", function () {
         // address, we let Devnet deploy it and return one for us. A custom messaging contract
         // can be deployed and its address provided to the loading function, as witnessed in a
         // later test. The contract sources can be found in the same directory as the artifacts.
-        const messagingLoadResponse = await devnetProvider.postman.loadL1MessagingContract(
-            L1_URL,
-            // If specifying a custom `deployer_account_private_key`, set `address` to null
-        );
+        // To deploy with a custom L1 account, pass `{ deployerAccountPrivateKey }` as the options.
+        const messagingLoadResponse = await devnetProvider.postman.loadL1MessagingContract(L1_URL);
         messagingContractAddress = messagingLoadResponse.messaging_contract_address;
 
         // First deploy the L2 contract.
@@ -88,7 +86,9 @@ describe("Postman", function () {
         const deploymentAddress = await messagingContract.getAddress();
 
         const { messaging_contract_address: loadedAddress } =
-            await devnetProvider.postman.loadL1MessagingContract(L1_URL, deploymentAddress);
+            await devnetProvider.postman.loadL1MessagingContract(L1_URL, {
+                messagingContractAddress: deploymentAddress,
+            });
 
         expectHexEquality(loadedAddress, deploymentAddress);
     });
@@ -96,9 +96,23 @@ describe("Postman", function () {
     /** This is also done in before(), but showcased separately here. */
     it("should load the already deployed contract if the address is provided", async () => {
         const { messaging_contract_address: loadedFrom } =
-            await devnetProvider.postman.loadL1MessagingContract(L1_URL, messagingContractAddress);
+            await devnetProvider.postman.loadL1MessagingContract(L1_URL, {
+                messagingContractAddress,
+            });
 
         expectHexEquality(loadedFrom, messagingContractAddress);
+    });
+
+    it("should reject loading if both the address and the deployer key are specified", async () => {
+        try {
+            await devnetProvider.postman.loadL1MessagingContract(L1_URL, {
+                messagingContractAddress,
+                deployerAccountPrivateKey: "0x1",
+            });
+            assert.fail("Should have thrown, got response instead");
+        } catch (err) {
+            expect((err as Error).message).to.contain("cannot be specified simultaneously");
+        }
     });
 
     it("should exchange messages between L1 and L2", async () => {

@@ -164,6 +164,19 @@ const block = await starknetProvider.getBlock("latest");
 
 Assuming there is an L1 provider running (e.g. [anvil](https://github.com/foundry-rs/foundry/tree/master/crates/anvil)), use the `postman` property of `DevnetProvider` to achieve [L1-L2 communication](https://starknet-io.github.io/starknet-devnet/docs/postman). See [this example](https://github.com/starknet-io/starknet-devnet-js/blob/master/test/l1-l2-postman.test.ts) for more info.
 
+```typescript
+// Deploy a new messaging contract on L1, using the first predeployed L1 account.
+const { messaging_contract_address } = await devnet.provider.postman.loadL1MessagingContract(l1Url);
+
+// Or deploy it using a custom L1 account.
+await devnet.provider.postman.loadL1MessagingContract(l1Url, {
+    deployerAccountPrivateKey: "0x...",
+});
+
+// Or load an already deployed messaging contract.
+await devnet.provider.postman.loadL1MessagingContract(l1Url, { messagingContractAddress: "0x..." });
+```
+
 ## Transaction Proofs
 
 Use the `proofs` property of `DevnetProvider` to prove INVOKE v3 transactions. This is useful for testing proof-aware flows in your application. See the [Devnet proofs documentation](https://starknet-io.github.io/starknet-devnet/docs/proofs) for more details on proof modes.
